@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MakiNuki runtime-web demo</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    margin: 0; background: #14161a; color: #d7dae0;
+  }
+  header { padding: 14px 20px; border-bottom: 1px solid #2a2e36; }
+  h1 { font-size: 15px; margin: 0; color: #e8eaee; font-weight: 600; }
+  h1 span { color: #e5a50a; }
+  main { display: grid; grid-template-columns: 280px 1fr; gap: 16px; padding: 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  section { background: #1a1d23; border: 1px solid #2a2e36; border-radius: 8px; padding: 12px; }
+  h2 { font-size: 11px; margin: 0 0 10px; color: #8a93a3; text-transform: uppercase; letter-spacing: .08em; }
+  label { display: block; font-size: 12px; margin: 8px 0 3px; color: #aab2c0; }
+  input, select, button {
+    font: inherit; color: inherit; background: #101318;
+    border: 1px solid #333a45; border-radius: 5px; padding: 6px 8px; width: 100%;
+  }
+  button { background: #232a35; cursor: pointer; width: auto; }
+  button:hover { border-color: #e5a50a; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row label { margin: 0; display: flex; align-items: center; gap: 6px; }
+  .row input[type=checkbox] { width: auto; }
+  .meta { font-size: 11px; color: #8a93a3; white-space: pre-wrap; }
+  ul { list-style: none; margin: 8px 0 0; padding: 0; }
+  li { font-size: 12px; padding: 7px 9px; border: 1px solid #2a2e36; border-radius: 5px; margin-bottom: 6px; cursor: pointer; }
+  li:hover { border-color: #e5a50a; }
+  li .sub { color: #7e8794; font-size: 11px; }
+  .tier { display: flex; align-items: center; gap: 8px; padding: 8px 9px; border: 1px solid #2a2e36; border-radius: 6px; margin-bottom: 6px; font-size: 12px; }
+  .tier .name { width: 130px; color: #c9ced6; }
+  .tier .info { flex: 1; color: #7e8794; font-size: 11px; word-break: break-all; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 10px; letter-spacing: .05em; text-transform: uppercase; border: 1px solid #333a45; color: #8a93a3;
+  }
+  .badge.on { color: #4cbf5f; border-color: #2c5c38; background: #10251a; }
+  .badge.off { color: #e05b5b; border-color: #5c2c2c; background: #251010; }
+  .badge.idle { color: #8a93a3; }
+  .ok { color: #4cbf5f; } .bad { color: #e05b5b; }
+  #pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 8px; }
+  #pages figure { margin: 0; border: 1px solid #2a2e36; border-radius: 6px; overflow: hidden; text-align: center; }
+  #pages img { width: 100%; min-height: 120px; display: block; background: #0d0f12; }
+  #pages figcaption { font-size: 10px; color: #7e8794; padding: 4px; word-break: break-all; }
+  details { font-size: 12px; margin: 4px 0; }
+  details summary { cursor: pointer; color: #c9ced6; }
+  details pre { white-space: pre-wrap; word-break: break-all; font-size: 11px; color: #8a93a3; max-height: 260px; overflow: auto; }
+  details p { margin: 4px 0; }
+  #status { margin-top: 10px; }
+  #calls { font-size: 11px; color: #8a93a3; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header><h1>MakiNuki <span>runtime-web</span> demo</h1></header>
+<main>
+  <section style="grid-column:1 / -1">
+    <h2>Instructions</h2>
+    <details>
+      <summary>How to run this page (click to expand)</summary>
+      <pre style="font-size:11px;color:#8a93a3;white-space:pre-wrap">
+1. Build once:  (from runtime-web/)  pnpm build
+2. Serve:       pnpm serve          (static server on http://127.0.0.1:5173, no deps)
+3. Open http://127.0.0.1:5173/ (serves this page) or /examples/demo.html
+
+Changing mode / proxy / token / registry re-creates the runtime.
+
+Diagnostics: check the browser console for logs; the serve terminal logs each
+request (method, status, latency, bytes).
+
+Worker mode (optional): from worker-proxy/ run `pnpm wrangler dev --port 8787 --local false`.
+  Browser requests carry the page's own Origin (http://127.0.0.1:5173) - the worker's
+  CLIENT_ORIGINS in .dev.vars must include it, e.g.
+      CLIENT_ORIGINS = "https://app.example.com,http://127.0.0.1:5173"
+  then restart the worker. Token input must match CLIENT_TOKEN in .dev.vars.
+
+Companion mode (optional): open the browser's extension manager, enable
+  developer mode, load the unpacked companion-extension/ directory, then open
+  the extension popup and click "Connect (grant host access)". After editing
+  the extension source, click the reload icon on the extension card, then
+  refresh this page. Use the Ping button in the transport panel to verify the
+  handshake.
+
+Needs a browser with WASM JSPI support. Browser-side payload validation is a
+known follow-up (pnpm e2e --validate exercises validation in Node instead).
+
+Direct mode needs no worker or extension, but browser requests are subject to
+upstream CORS. The MangaDex API currently sends no Access-Control-Allow-Origin,
+so search/details/pages fail in direct mode from this page; use companion or
+worker mode for mangadex in the browser. Direct mode still proves registry,
+wasm + sha256, metadata, filters and CORS-open image URLs. The full direct
+pipeline is verified in Node (no CORS there): pnpm e2e --search "Yosuga no Sora"
+--details --pages --image 0 --latest.</pre>
+    </details>
+  </section>
+  <section>
+    <h2>Config</h2>
+    <label>Registry URL</label>
+    <input id="registry" value="https://makinuki.github.io/index.json">
+    <label>Source</label>
+    <select id="source"></select>
+    <label>Transport mode</label>
+    <select id="mode">
+      <option value="direct" selected>direct</option>
+      <option value="companion">companion</option>
+      <option value="worker">worker</option>
+    </select>
+    <label>Worker proxy URL</label>
+    <input id="proxy" value="http://127.0.0.1:8787">
+    <label>Client token</label>
+    <input id="token" value="dev-token">
+    <div class="row" style="margin-top:10px">
+      <button id="load">Load source</button>
+    </div>
+    <h2 style="margin-top:16px">Pipeline</h2>
+    <label>Search query</label>
+    <div class="row">
+      <input id="query" value="">
+      <button id="search" disabled>Search</button>
+    </div>
+    <p class="meta" id="status">Not loaded</p>
+  </section>
+
+  <section>
+    <h2>Transport status</h2>
+    <div class="tier">
+      <span class="name">Direct</span>
+      <span class="info">browser-native fetch, subject to upstream CORS</span>
+      <span class="badge idle" id="badge-direct">idle</span>
+    </div>
+    <div class="tier">
+      <span class="name">Companion ext</span>
+      <span class="info" id="info-companion">not pinged</span>
+      <button id="ping" disabled style="width:auto;padding:2px 10px">Ping</button>
+      <span class="badge idle" id="badge-companion">idle</span>
+    </div>
+    <div class="tier">
+      <span class="name">Worker proxy</span>
+      <span class="info" id="info-worker">no URL</span>
+      <span class="badge idle" id="badge-worker">idle</span>
+    </div>
+    <p class="meta" id="transport-status">mode=direct · last used: -</p>
+  </section>
+
+  <section>
+    <h2>Source info</h2>
+    <p class="meta" id="meta">-</p>
+  </section>
+
+  <section>
+    <h2>Search results</h2>
+    <ul id="results"><li class="sub">Run a search to populate this list.</li></ul>
+  </section>
+
+  <section id="detail">
+    <h2>Details / chapters</h2>
+    <ul id="chapters"><li class="sub">Pick a search result.</li></ul>
+  </section>
+
+  <section>
+    <h2>Pages</h2>
+    <div class="row" style="margin-bottom:6px">
+      <button id="stream-all" disabled>Stream all via blob (fetchImage)</button>
+      <span class="meta" id="stream-note"></span>
+    </div>
+    <div id="pages"><p class="meta">Pick a chapter.</p></div>
+  </section>
+
+  <section style="grid-column:1 / -1">
+    <h2>Diagnostics</h2>
+    <details open>
+      <summary>Transport config</summary>
+      <pre id="diag-config">-</pre>
+    </details>
+    <details>
+      <summary>Recent calls (step, mode, status, ms, bytes)</summary>
+      <pre id="calls">-</pre>
+    </details>
+    <details>
+      <summary>Raw payload of last step</summary>
+      <pre id="diag-payload">Run a search to populate this inspector.</pre>
+    </details>
+  </section>
+</main>
+<script type="module">
+  import { MakiNukiRuntime } from "../dist/index.js";
+
+  const $ = (id) => document.getElementById(id);
+  const consolePrefix = "[harness]";
+  const pass = (line) => console.log(`${consolePrefix} PASS ${line}`);
+  const bad = (line) => console.error(`${consolePrefix} FAIL ${line}`);
+  const fail = (label, err) => bad(`${label}: ${err?.message ?? err}`);
+  const debug = (line) => console.debug(`${consolePrefix} DBG  ${line}`);
+
+  let runtime = null;
+  let source = null;
+  let details = null;
+  let runtimeId = 0;
+  let initNonce = 0;
+  const CONFIG_IDS = ["mode", "registry", "proxy", "token"];
+  const recentCalls = [];
+
+  function setConfigEnabled(enabled) {
+    for (const id of CONFIG_IDS) document.getElementById(id).disabled = !enabled;
+  }
+
+  function recordCall(step, info) {
+    recentCalls.unshift({ step, ...info, at: new Date().toISOString().slice(11, 19) });
+    const lines = recentCalls.slice(0, 10).map((c) =>
+      `${c.at}  ${c.step.padEnd(10)} mode=${String(c.mode ?? "-").padEnd(9)} status=${String(c.status ?? "-").padEnd(3)} ${String(c.ms).padStart(6)}ms  ${c.bytes !== undefined ? String(c.bytes).padStart(8) + "B" : ""}  ${c.note ?? ""}`.trimEnd(),
+    );
+    $("calls").textContent = lines.join("\n");
+  }
+
+  function transportState() {
+    if (!runtime) return "no runtime";
+    const t = runtime.transport;
+    return `pin=${t.pin} companion.available=${t.companion.isAvailable} worker=${!!t.worker} direct.allow=${t.allowDirect}`;
+  }
+
+  function setBadge(id, cls, text) {
+    const el = $(id);
+    el.className = `badge ${cls}`;
+    el.textContent = text;
+  }
+
+  function updateTransportPanel(initCompanionPing) {
+    const mode = $("mode").value;
+    const workerInfo = $("proxy").value
+      ? `${$("proxy").value}${$("token").value ? " (token set)" : " (no token)"}`
+      : "no URL";
+    $("info-worker").textContent = workerInfo;
+
+    setBadge("badge-direct", mode === "direct" ? "on" : "idle", mode === "direct" ? "active" : "standby");
+    setBadge("badge-worker", mode === "worker" ? "on" : "idle", mode === "worker" ? "active" : "standby");
+    $("ping").disabled = mode !== "companion";
+
+    if (mode !== "companion") {
+      $("info-companion").textContent = "not pinged";
+      setBadge("badge-companion", "idle", "standby");
+    } else if (initCompanionPing) {
+      $("info-companion").textContent = "pinging...";
+      setBadge("badge-companion", "idle", "pinging");
+    }
+
+    $("transport-status").textContent =
+      `mode=${mode} · last used: ${source?.lastTransportMode ?? "-"} · ${transportState()}`;
+  }
+
+  async function pingCompanion() {
+    if (!runtime || $("mode").value !== "companion") return;
+    $("ping").disabled = true;
+    $("info-companion").textContent = "pinging...";
+    setBadge("badge-companion", "idle", "pinging");
+    const t0 = performance.now();
+    try {
+      const ok = await runtime.transport.companion.detect();
+      const ms = Math.round(performance.now() - t0);
+      if (ok) {
+        $("info-companion").textContent = `answered in ${ms} ms`;
+        setBadge("badge-companion", "on", "connected");
+        pass(`companion ping ${ms} ms`);
+      } else {
+        $("info-companion").textContent = "no answer (extension missing or not connected)";
+        setBadge("badge-companion", "off", "disconnected");
+        bad("companion ping: no answer");
+      }
+    } catch (err) {
+      $("info-companion").textContent = "ping threw";
+      setBadge("badge-companion", "off", "error");
+      fail("companion ping", err);
+    } finally {
+      if ($("mode").value === "companion") $("ping").disabled = false;
+    }
+  }
+
+  async function init() {
+    const myNonce = ++initNonce;
+    setConfigEnabled(false);
+    $("load").disabled = true;
+    try {
+      if (runtime) { await runtime.close(); runtime = null; source = null; details = null; }
+      $("results").innerHTML = '<li class="sub">Run a search to populate this list.</li>';
+      $("chapters").innerHTML = '<li class="sub">Pick a search result.</li>';
+      $("pages").innerHTML = '<p class="meta">Pick a chapter.</p>';
+      $("stream-all").disabled = true;
+      $("status").textContent = "Loading registry...";
+      updateTransportPanel(false);
+
+      const mode = $("mode").value;
+      const base = { direct: false, companion: false, worker: false };
+      if (mode === "direct") base.pin = "direct", base.direct = true;
+      if (mode === "companion") base.pin = "companion", base.companion = true;
+      if (mode === "worker") {
+        base.pin = "worker"; base.worker = true;
+        base.proxyUrl = $("proxy").value;
+        base.clientToken = $("token").value || undefined;
+      }
+
+      runtime = new MakiNukiRuntime({ registryUrl: $("registry").value, transport: base });
+      runtimeId++;
+      const instance = runtimeId;
+      debug(`runtime #${instance} created · ${transportState()}`);
+      const index = await runtime.registryIndex();
+      if (myNonce !== initNonce) { debug(`init #${myNonce} stale after registry, aborting`); return; }
+      $("diag-config").textContent = JSON.stringify(
+        { registryUrl: $("registry").value, transport: base, abiVersion: index.sources[0]?.abiVersion, sources: index.sources.length },
+        null, 2,
+      );
+      pass(`runtime #${instance} · registry ${index.sources.length} sources · ${transportState()}`);
+
+      const select = $("source");
+      select.innerHTML = "";
+      for (const s of index.sources) {
+        select.append(Object.assign(document.createElement("option"), { value: s.id, textContent: `${s.name} (${s.id}) v${s.version}` }));
+      }
+
+      const detected = await runtime.transportMode();
+      if (myNonce !== initNonce) { debug(`init #${myNonce} stale after transportMode, aborting`); return; }
+      $("status").textContent = `Registry loaded. Transport: ${detected ?? "none"} · ${transportState()}`;
+      pass(`transport detected: ${detected} · ${transportState()}`);
+      $("search").disabled = false;
+      $("load").textContent = "Load source";
+      $("load").onclick = loadSource;
+      updateTransportPanel(mode === "companion");
+      if (mode === "companion") await pingCompanion();
+    } catch (err) {
+      if (myNonce === initNonce) {
+        fail("init", err);
+        $("status").textContent = "Load failed";
+      }
+    } finally {
+      if (myNonce === initNonce) {
+        $("load").disabled = false;
+        setConfigEnabled(true);
+      }
+    }
+  }
+
+  async function loadSource() {
+    const myNonce = initNonce;
+    $("load").disabled = true;
+    try {
+      if (source) { await source.close(); source = null; }
+      source = await runtime.loadSource($("source").value);
+      if (myNonce !== initNonce) return;
+      pass(`wasm loaded + sha256 verified: ${source.id}`);
+      const meta = await source.getMetadata();
+      const filters = await source.getFilters();
+      if (myNonce !== initNonce) return;
+      $("meta").textContent = `${meta.name} v${meta.version} · lang=${meta.lang} · abiVersion=${meta.abiVersion}\nbaseUrl=${meta.baseUrl}\nicon=${meta.iconUrl}\nfilters=${filters.length} (${filters.filter(f => f.type === "checkbox").length} checkbox, ${filters.filter(f => f.type === "select").length} select, ${filters.filter(f => f.type === "tri_state").length} tri_state, ${filters.filter(f => f.type === "text").length} text)`;
+      pass(`get_metadata + get_filters (${filters.length})`);
+      $("status").textContent = `Source ${source.id} ready · transport: ${source.lastTransportMode ?? "?"} · ${transportState()}`;
+      $("load").textContent = "Reload registry";
+      $("load").onclick = init;
+      updateTransportPanel(false);
+    } catch (err) {
+      if (myNonce === initNonce) fail("loadSource", err);
+    } finally {
+      if (myNonce === initNonce) $("load").disabled = false;
+    }
+  }
+
+  async function doSearch() {
+    $("search").disabled = true;
+    debug(`search start · ${transportState()} · lastMode=${source ? source.lastTransportMode : "?"}`);
+    const t0 = performance.now();
+    try {
+      const res = await source.search({ query: $("query").value, page: 1 });
+      const ms = Math.round(performance.now() - t0);
+      pass(`search items=${res.items.length} hasNextPage=${res.hasNextPage} mode=${source.lastTransportMode} · ${ms} ms`);
+      recordCall("search", { mode: source.lastTransportMode, status: 200, ms, bytes: res.items.length, note: `query="${$("query").value}"` });
+      $("diag-payload").textContent = JSON.stringify(res, null, 2);
+      $("results").innerHTML = "";
+      for (const item of res.items) {
+        const li = Object.assign(document.createElement("li"), { textContent: item.title });
+        li.append(Object.assign(document.createElement("div"), { className: "sub", textContent: `${item.id}${item.status ? " · " + item.status : ""}${item.latestChapter ? " · latest " + item.latestChapter : ""}` }));
+        li.onclick = () => doDetails(item);
+        $("results").append(li);
+      }
+      updateTransportPanel(false);
+    } catch (err) {
+      bad(`search: ${err?.message ?? err} · ${transportState()}`);
+      recordCall("search", { mode: source?.lastTransportMode ?? "-", status: 0, ms: Math.round(performance.now() - t0), note: `error: ${err?.message ?? err}` });
+    } finally {
+      $("search").disabled = false;
+    }
+  }
+
+  async function doDetails(item) {
+    const t0 = performance.now();
+    try {
+      details = await source.getDetails(item.id);
+      const ms = Math.round(performance.now() - t0);
+      pass(`details ${details.title} · chapters=${details.chapters.length} · status=${details.status} · mode=${source.lastTransportMode} · ${ms} ms`);
+      recordCall("details", { mode: source.lastTransportMode, status: 200, ms, bytes: details.chapters.length, note: details.title });
+      $("diag-payload").textContent = JSON.stringify(details, null, 2);
+      const box = $("chapters");
+      box.innerHTML = "";
+      const first = details.chapters.slice(0, 60);
+      for (const ch of first) {
+        const li = Object.assign(document.createElement("li"), { textContent: `#${ch.number ?? "?"} ${ch.title ?? ""}`.trim() });
+        li.append(Object.assign(document.createElement("div"), { className: "sub", textContent: `${ch.id}${ch.language ? " · " + ch.language : ""}${ch.uploadedAt ? " · " + new Date(ch.uploadedAt).toISOString().slice(0, 10) : ""}` }));
+        li.onclick = () => doPages(ch, first.indexOf(ch));
+        box.append(li);
+      }
+      const more = details.chapters.length - first.length;
+      if (more > 0) box.append(Object.assign(document.createElement("li"), { className: "sub", textContent: `+ ${more} older chapters not listed (use pnpm e2e --details to fetch them)` }));
+
+      const det = $("detail");
+      let ex = det.querySelector("details");
+      if (!ex) ex = Object.assign(document.createElement("details"), { innerHTML: "<summary>raw MangaDetails</summary><pre></pre>" });
+      det.appendChild(ex);
+      ex.querySelector("pre").textContent = JSON.stringify(details, null, 2);
+      ex.querySelector("summary").textContent = "raw MangaDetails";
+      updateTransportPanel(false);
+    } catch (err) {
+      fail("details", err);
+      recordCall("details", { mode: source?.lastTransportMode ?? "-", status: 0, ms: Math.round(performance.now() - t0), note: `error: ${err?.message ?? err}` });
+    }
+  }
+
+  async function doPages(chapter, index) {
+    const t0 = performance.now();
+    try {
+      const pages = await source.getPages(chapter.id);
+      const ms = Math.round(performance.now() - t0);
+      pass(`pages ${chapter.id.slice(0, 12)}… count=${pages.length} scrambled=${pages.filter(p => p.isScrambled).length} mode=${source.lastTransportMode} · ${ms} ms`);
+      recordCall("pages", { mode: source.lastTransportMode, status: 200, ms, bytes: pages.length, note: chapter.id.slice(0, 12) });
+      $("diag-payload").textContent = JSON.stringify(pages, null, 2);
+      currentPages = pages;
+      const grid = $("pages");
+      grid.innerHTML = `<p class="meta">Chapter ${chapter.number ?? chapter.id} — ${pages.length} pages (thumbs load directly via &lt;img&gt;, click to stream via blob, or use Stream all).</p>`;
+      $("stream-all").disabled = false;
+      renderThumbs(pages.slice(0, 6));
+      updateTransportPanel(false);
+    } catch (err) {
+      fail("pages", err);
+      recordCall("pages", { mode: source?.lastTransportMode ?? "-", status: 0, ms: Math.round(performance.now() - t0), note: `error: ${err?.message ?? err}` });
+    }
+  }
+
+  let currentPages = [];
+
+  function renderThumbs(pages) {
+    const grid = $("pages");
+    const placeholder = grid.querySelector("p.meta");
+    if (placeholder) placeholder.remove();
+    for (const page of pages) {
+      const fig = document.createElement("figure");
+      const img = Object.assign(document.createElement("img"), { alt: `page ${page.index}`, title: page.url });
+      const cap = Object.assign(document.createElement("figcaption"), { textContent: `[${page.index}] ${page.isScrambled ? "scrambled" : "plain"}` });
+      img.onclick = () => streamPage(page, fig);
+      img.onerror = () => {
+        cap.textContent = `[${page.index}] direct img blocked (CORS/hotlink), click to stream`;
+        console.warn(`[harness] direct <img> failed for page ${page.index}: ${page.url}`);
+      };
+      img.src = page.url;
+      fig.append(img, cap);
+      grid.append(fig);
+    }
+  }
+
+  async function streamPage(page, fig) {
+    const t0 = performance.now();
+    try {
+      const blob = await source.fetchImage(page);
+      const ms = Math.round(performance.now() - t0);
+      pass(`fetchImage [${page.index}] ${blob.type} ${blob.size} bytes mode=${source.lastTransportMode} · ${ms} ms`);
+      recordCall("fetchImage", { mode: source.lastTransportMode, status: 200, ms, bytes: blob.size, note: `page [${page.index}] ${blob.type}` });
+      $("diag-payload").textContent = `page [${page.index}]\nurl: ${page.url}\nblob: ${blob.type} ${blob.size} bytes\nmode: ${source.lastTransportMode}\nlatency: ${ms} ms`;
+      if (fig) {
+        fig.querySelector("img").src = URL.createObjectURL(blob);
+        fig.querySelector("figcaption").textContent = `[${page.index}] blob ${blob.type} ${blob.size}B · ${ms} ms`;
+      }
+    } catch (err) {
+      fail(`fetchImage [${page.index}]`, err);
+      recordCall("fetchImage", { mode: source?.lastTransportMode ?? "-", status: 0, ms: Math.round(performance.now() - t0), note: `page [${page.index}] error: ${err?.message ?? err}` });
+    }
+  }
+
+  async function streamAll() {
+    $("stream-all").disabled = true;
+    $("stream-note").textContent = "streaming...";
+    const grid = $("pages");
+    const pages = currentPages.slice(0, 6);
+    for (const [i, page] of pages.entries()) {
+      const fig = grid.querySelectorAll("figure")[i];
+      await streamPage(page, fig);
+    }
+    $("stream-note").textContent = "";
+    $("stream-all").disabled = false;
+  }
+
+  $("load").onclick = init;
+  $("search").onclick = doSearch;
+  $("ping").onclick = pingCompanion;
+  $("stream-all").onclick = streamAll;
+  for (const id of CONFIG_IDS) {
+    document.getElementById(id).addEventListener("change", init);
+  }
+  init();
+</script>
+</body>
+</html>

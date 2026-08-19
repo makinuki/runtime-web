@@ -1,0 +1,50 @@
+{
+  "name": "@makinuki/runtime-web",
+  "version": "1.0.0",
+  "description": "Official MakiNuki web runtime: runs WASM scraper plugins in the browser with a cascading transport manager (Direct -> Companion Extension -> Worker Proxy)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "node --experimental-wasm-modules --experimental-wasm-jspi scripts/e2e.mjs",
+    "serve": "node scripts/serve.mjs"
+  },
+  "dependencies": {
+    "@extism/extism": "2.0.0-rc13",
+    "@makinuki/spec": "link:../spec"
+  },
+  "peerDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  },
+  "peerDependenciesMeta": {
+    "ajv": {
+      "optional": true
+    },
+    "ajv-formats": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "tsdown": "^0.22.14",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "packageManager": "pnpm@11.22.0"
+}
