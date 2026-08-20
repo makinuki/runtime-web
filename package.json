@@ -2,6 +2,8 @@
   "name": "@makinuki/runtime-web",
   "version": "1.0.0",
   "description": "Official MakiNuki web runtime: runs WASM scraper plugins in the browser with a cascading transport manager (Direct -> Companion Extension -> Worker Proxy)",
+  "license": "MIT",
+  "author": { "name": "Byururu-sama", "url": "https://github.com/Byururu-sama" },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
