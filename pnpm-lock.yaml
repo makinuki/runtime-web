@@ -12,8 +12,8 @@ importers:
         specifier: 2.0.0-rc13
         version: 2.0.0-rc13
       '@makinuki/spec':
-        specifier: link:../spec
-        version: link:../spec
+        specifier: ^1.1.0
+        version: 1.1.0
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
@@ -41,6 +41,9 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
+
+  '@makinuki/spec@1.1.0':
+    resolution: {integrity: sha512-S4dqTbL/i4YFiQkrinVK3LY5ex6BibyWc10pUJzM9C1CtjxLmry7jd6P/4mK494om2D+pXKjhDe8OA/L0/j0dQ==}
 
   '@oxc-project/types@0.144.0':
     resolution: {integrity: sha512-nuhZIOLuI6TFQ32I/WnUx+SCPY7SdSKwgnFHydAuoS1+Z4BRcaP+RRJmGzl9lw+0OFF7UmaESf7KQRXaNLHypg==}
@@ -852,6 +855,8 @@ snapshots:
   '@extism/extism@2.0.0-rc13': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
+
+  '@makinuki/spec@1.1.0': {}
 
   '@oxc-project/types@0.144.0': {}
 

@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@extism/extism": "2.0.0-rc13",
-    "@makinuki/spec": "link:../spec"
+    "@makinuki/spec": "^1.1.0"
   },
   "peerDependencies": {
     "ajv": "^8.20.0",

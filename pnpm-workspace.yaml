@@ -1,0 +1,2 @@
+minimumReleaseAgeExclude:
+  - '@makinuki/spec@1.1.0'
