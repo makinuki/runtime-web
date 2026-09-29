@@ -25,6 +25,8 @@ describe("Registry", () => {
           wasmUrl: "https://registry.example/mangadex.wasm",
           sha256: "a".repeat(64),
           minRuntimeVersion: "1.0.0",
+          rateLimit: { intervalMs: 200 },
+          retry: { maxAttempts: 2, backoffMs: 30000 },
         },
       ],
     };
@@ -38,6 +40,8 @@ describe("Registry", () => {
 
     expect(first.sources).toHaveLength(1);
     expect(entry.id).toBe("mangadex");
+    expect(entry.rateLimit?.intervalMs).toBe(200);
+    expect(entry.retry?.maxAttempts).toBe(2);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

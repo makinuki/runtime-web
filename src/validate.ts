@@ -1,6 +1,13 @@
 import type Ajv from "ajv";
 import type { ErrorObject } from "ajv";
-import type { FilterSchema, MangaItem, MangaDetails, PageItem, SourceMetadata } from "./types";
+import type {
+  FilterSchema,
+  MangaItem,
+  MangaDetails,
+  PageItem,
+  SettingSchema,
+  SourceMetadata,
+} from "./types";
 
 import chapterSchema from "@makinuki/spec/schemas/chapter.schema.json" with { type: "json" };
 import detailsSchema from "@makinuki/spec/schemas/details.schema.json" with { type: "json" };
@@ -9,6 +16,7 @@ import mangaSchema from "@makinuki/spec/schemas/manga.schema.json" with { type: 
 import metadataSchema from "@makinuki/spec/schemas/metadata.schema.json" with { type: "json" };
 import pageSchema from "@makinuki/spec/schemas/page.schema.json" with { type: "json" };
 import pagesSchema from "@makinuki/spec/schemas/pages.schema.json" with { type: "json" };
+import settingsSchema from "@makinuki/spec/schemas/settings.schema.json" with { type: "json" };
 
 const SCHEMA_BASE = "https://makinuki.github.io/schemas";
 
@@ -29,6 +37,7 @@ async function getAjv(): Promise<Ajv> {
           chapterSchema,
           pagesSchema,
           pageSchema,
+          settingsSchema,
         ] as object[],
       );
       return ajv;
@@ -47,6 +56,10 @@ export async function validateMetadata(payload: SourceMetadata): Promise<string[
 
 export async function validateFilters(payload: FilterSchema[]): Promise<string[]> {
   return validateAgainst("get_filters", payload, ref("filter"));
+}
+
+export async function validateSettings(payload: SettingSchema[]): Promise<string[]> {
+  return validateAgainst("get_settings", payload, ref("settings"));
 }
 
 export async function validateDetails(payload: MangaDetails): Promise<string[]> {

@@ -11,6 +11,16 @@ export type ErrorCode =
   | "MEMORY_LIMIT_EXCEEDED"
   | "UNSCRAMBLE_FAILED";
 
+export interface RateLimitHint {
+  intervalMs?: number;
+  burst?: number;
+}
+
+export interface RetryHint {
+  maxAttempts?: number;
+  backoffMs?: number;
+}
+
 export interface SourceMetadata {
   id: string;
   name: string;
@@ -21,6 +31,8 @@ export interface SourceMetadata {
   iconUrl: string;
   nsfw: boolean;
   allowedHosts?: string[];
+  rateLimit?: RateLimitHint;
+  retry?: RetryHint;
 }
 
 export interface SearchQuery {
@@ -35,21 +47,30 @@ export interface PageResult<T> {
   items: T[];
 }
 
+export interface CoverVariant {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
 export interface MangaItem {
   id: string;
   title: string;
-  coverUrl: string;
+  coverUrl?: string;
   latestChapter?: string;
   url?: string;
+  covers?: CoverVariant[];
 }
 
 export interface ChapterItem {
   id: string;
   number: number | null;
+  volume?: number;
   language?: string;
   title?: string;
   uploadedAt?: number;
   scanlator?: string;
+  locked?: boolean;
   url?: string;
 }
 
@@ -61,8 +82,10 @@ export interface MangaDetails {
   authors?: string[];
   artists?: string[];
   genres?: string[];
+  tags?: string[];
   status: "Ongoing" | "Completed" | "Hiatus" | "Cancelled" | "Unknown";
-  coverUrl: string;
+  coverUrl?: string;
+  covers?: CoverVariant[];
   chapters: ChapterItem[];
 }
 
@@ -117,6 +140,32 @@ export interface TextFilter extends BaseFilter {
   default?: string;
 }
 
+export type SettingSchema = CheckboxSetting | SelectSetting | TextSetting;
+
+interface BaseSetting {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+export interface CheckboxSetting extends BaseSetting {
+  type: "checkbox";
+  default: boolean;
+}
+
+export interface SelectSetting extends BaseSetting {
+  type: "select";
+  options: Array<{ label: string; value: string }>;
+  default: string;
+}
+
+export interface TextSetting extends BaseSetting {
+  type: "text";
+  placeholder?: string;
+  default?: string;
+  sensitive?: boolean;
+}
+
 export type PluginResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: { code: ErrorCode; message: string } };
@@ -147,6 +196,8 @@ export interface RegistryEntry {
   sha256: string;
   minRuntimeVersion: string;
   allowedHosts?: string[];
+  rateLimit?: RateLimitHint;
+  retry?: RetryHint;
 }
 
 export interface RegistryIndex {

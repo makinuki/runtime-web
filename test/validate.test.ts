@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
-import type { FilterSchema, MangaDetails, MangaItem, PageItem, SourceMetadata } from "../src/types";
+import type {
+  FilterSchema,
+  MangaDetails,
+  MangaItem,
+  PageItem,
+  SettingSchema,
+  SourceMetadata,
+} from "../src/types";
 import {
   validateDetails,
   validateFilters,
   validateMetadata,
   validatePages,
   validateSearch,
+  validateSettings,
 } from "../src/validate";
 
 const validMetadata = {
@@ -134,15 +142,29 @@ describe("validateSearch", () => {
     expect(errors.length).toBeGreaterThan(0);
   });
 
-  it("rejects an item missing coverUrl", async () => {
-    const broken = { id: "x", title: "T", latestChapter: "Ch. 1", url: "https://x.example/t" };
+  it("accepts an item without coverUrl (no usable artwork)", async () => {
+    const noCover = { id: "x", title: "T", latestChapter: "Ch. 1", url: "https://x.example/t" };
+    expect(
+      await validateSearch({
+        page: 1,
+        hasNextPage: false,
+        items: [noCover] as unknown as MangaItem[],
+      }),
+    ).toEqual([]);
+  });
+
+  it("rejects covers without a coverUrl", async () => {
+    const broken = {
+      id: "x",
+      title: "T",
+      covers: [{ url: "https://x.example/c-512.jpg" }],
+    };
     const errors = await validateSearch({
       page: 1,
       hasNextPage: false,
       items: [broken] as unknown as MangaItem[],
     });
-    expect(errors.length).toBeGreaterThan(0);
-    expect(errors.some((e) => e.includes("items/0") && e.includes("coverUrl"))).toBe(true);
+    expect(errors.some((e) => e.includes("coverUrl"))).toBe(true);
   });
 
   it("rejects page below 1", async () => {
@@ -195,9 +217,9 @@ describe("validatePages", () => {
     expect(await validatePages([validPage])).toEqual([]);
   });
 
-  it("rejects a scrambled page without metadata only if the schema enforces it", async () => {
+  it("rejects a scrambled page without metadata", async () => {
     const errors = await validatePages([{ ...validPage, isScrambled: true }]);
-    expect(errors).toEqual([]);
+    expect(errors.some((e) => e.includes("metadata"))).toBe(true);
   });
 
   it("accepts a scrambled page with full metadata", async () => {
@@ -219,5 +241,58 @@ describe("validatePages", () => {
   it("rejects a negative index", async () => {
     const errors = await validatePages([{ ...validPage, index: -1 }]);
     expect(errors.some((e) => e.includes("index"))).toBe(true);
+  });
+});
+
+describe("validateSettings", () => {
+  const validSettings: SettingSchema[] = [
+    { id: "data_saver", title: "Data saver", type: "checkbox", default: false },
+    {
+      id: "quality",
+      title: "Quality",
+      type: "select",
+      options: [
+        { label: "High", value: "high" },
+        { label: "Low", value: "low" },
+      ],
+      default: "high",
+    },
+    {
+      id: "base_url",
+      title: "Site address",
+      type: "text",
+      placeholder: "https://x.example",
+      default: "https://x.example",
+    },
+  ];
+
+  it("accepts one setting of each kind", async () => {
+    expect(await validateSettings(validSettings)).toEqual([]);
+  });
+
+  it("accepts a sensitive text setting", async () => {
+    const sensitive = [{ id: "token", title: "Token", type: "text", sensitive: true }];
+    expect(await validateSettings(sensitive as SettingSchema[])).toEqual([]);
+  });
+
+  it("rejects a checkbox without a default", async () => {
+    const errors = await validateSettings([
+      { id: "flag", title: "Flag", type: "checkbox" },
+    ] as unknown as SettingSchema[]);
+    expect(errors.some((e) => e.includes("default"))).toBe(true);
+  });
+
+  it("rejects an unknown setting kind", async () => {
+    const errors = await validateSettings([
+      { id: "x", title: "X", type: "radio", default: "" },
+    ] as unknown as SettingSchema[]);
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it("rejects unknown extra properties", async () => {
+    const errors = await validateSettings([
+      { id: "x", title: "X", type: "text", extra: true },
+    ] as unknown as SettingSchema[]);
+    expect(errors.length).toBeGreaterThan(0);
   });
 });
