@@ -38,7 +38,7 @@ Transport (pin one mode; direct by default)
   --origin <origin>     Origin header sent with worker requests
 
 Pipeline steps
-  --search <query>      Search query (default: empty string)
+  --search <query>      Search query (default: "Yosuga no Sora")
   --page <n>            Search page number (default: 1)
   --details <id>        Manga id for get_details (default: first search item)
   --pages <id>          Chapter id for get_pages (default: first chapter; --latest uses last)
@@ -67,7 +67,7 @@ const CLIENT_TOKEN = flag("token", undefined);
 const ORIGIN = flag("origin", undefined);
 const PIN = flag("pin", undefined);
 const VALIDATE = args.has("validate");
-const QUERY = flag("search", "");
+const QUERY = flag("search", "Yosuga no Sora");
 const PAGE = Number(flag("page", "1"));
 const DETAILS_ID = flag("details", undefined);
 const PAGES_ID = flag("pages", undefined);
@@ -162,11 +162,39 @@ async function main() {
     pass(`       chapters=${detailsRes.chapters.length} status=${detailsRes.status} title=${detailsRes.title}`);
   }
 
-  const pagesId = PAGES_ID ?? (LATEST ? details?.result?.chapters?.at(-1)?.id : details?.result?.chapters?.[0]?.id);
-  if (!pagesId) {
-    fail("get_pages", "no chapter id available");
+  // A details list can be chapter-less (a title with no listed chapters) or the
+  // first chapter can be unreadable (a locked or removed entry), and both are
+  // valid contract outcomes, so the run probes the chapter list in place for
+  // the first chapter that returns pages instead of failing on chapter zero.
+  let pagesId = PAGES_ID ?? undefined;
+  let pages;
+  if (pagesId) {
+    try {
+      pages = await timed("pages", () => source.getPages(pagesId));
+    } catch (err) {
+      fail(`get_pages ${pagesId.slice(0, 12)}...`, err.message);
+    }
+  } else if (details) {
+    const candidates = LATEST ? [...details.result.chapters].reverse() : details.result.chapters;
+    for (const chapter of candidates) {
+      try {
+        const probe = await timed("pages", () => source.getPages(chapter.id));
+        if (Array.isArray(probe.result) && probe.result.length > 0) {
+          pagesId = chapter.id;
+          pages = probe;
+          break;
+        }
+      } catch (err) {
+        console.log(`       - chapter ${chapter.id} unreadable (${err.message}), trying next`);
+      }
+    }
+    if (!pagesId) {
+      fail("get_pages", `no readable chapter (details lists ${candidates.length} chapters)`);
+    }
   } else {
-    const pages = await timed("pages", () => source.getPages(pagesId));
+    fail("get_pages", "no chapter id available (details unavailable)");
+  }
+  if (pages) {
     const pagesRes = pages.result;
     const scrambled = pagesRes.filter((p) => p.isScrambled).length;
     check(

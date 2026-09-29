@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
 <title>MakiNuki runtime-web demo</title>
 <style>
   :root { color-scheme: dark; }
@@ -436,7 +437,7 @@ pipeline is verified in Node (no CORS there): pnpm e2e --search "Yosuga no Sora"
       $("diag-payload").textContent = JSON.stringify(pages, null, 2);
       currentPages = pages;
       const grid = $("pages");
-      grid.innerHTML = `<p class="meta">Chapter ${chapter.number ?? chapter.id} — ${pages.length} pages (thumbs load directly via &lt;img&gt;, click to stream via blob, or use Stream all).</p>`;
+      grid.innerHTML = `<p class="meta">Chapter ${chapter.number ?? chapter.id} - ${pages.length} pages (thumbs load directly via &lt;img&gt;, click to stream via blob, or use Stream all).</p>`;
       $("stream-all").disabled = false;
       renderThumbs(pages.slice(0, 6));
       updateTransportPanel(false);
