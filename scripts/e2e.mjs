@@ -122,7 +122,9 @@ async function main() {
   const entry = index.sources.find((s) => s.id === SOURCE_ID);
   check(!!entry, `registry entry for ${SOURCE_ID} (${ms} ms)`, `sources=${index.sources.length}`);
   if (!entry) process.exit(1);
-  pass(`registry ${REGISTRY} abiVersion=${entry.abiVersion} sha256=${entry.sha256.slice(0, 12)}...`);
+  pass(
+    `registry ${REGISTRY} abiVersion=${entry.abiVersion} sha256=${entry.sha256.slice(0, 12)}...`,
+  );
 
   const source = await runtime.loadSource(SOURCE_ID);
   pass("wasm load + sha256 verified");
@@ -133,12 +135,16 @@ async function main() {
   console.log(`       name=${meta.name} lang=${meta.lang} baseUrl=${meta.baseUrl}`);
 
   const filters = await source.getFilters();
-  pass(`get_filters ${filters.length} (${filters.filter((f) => f.type === "checkbox").length} checkbox, ${filters.filter((f) => f.type === "select").length} select, ${filters.filter((f) => f.type === "tri_state").length} tri_state, ${filters.filter((f) => f.type === "text").length} text)`);
+  pass(
+    `get_filters ${filters.length} (${filters.filter((f) => f.type === "checkbox").length} checkbox, ${filters.filter((f) => f.type === "select").length} select, ${filters.filter((f) => f.type === "tri_state").length} tri_state, ${filters.filter((f) => f.type === "text").length} text)`,
+  );
 
   const search = await timed("search", () => source.search({ query: QUERY, page: PAGE }));
   const searchRes = search.result;
   check(
-    searchRes.page === PAGE && Array.isArray(searchRes.items) && typeof searchRes.hasNextPage === "boolean",
+    searchRes.page === PAGE &&
+      Array.isArray(searchRes.items) &&
+      typeof searchRes.hasNextPage === "boolean",
     `search "${QUERY}" page=${PAGE} mode=${source.lastTransportMode ?? "?"} (${search.ms} ms)`,
     JSON.stringify(searchRes).slice(0, 200),
   );
@@ -155,11 +161,16 @@ async function main() {
     details = await timed("details", () => source.getDetails(detailsId));
     const detailsRes = details.result;
     check(
-      detailsRes.id === detailsId && detailsRes.title && detailsRes.status && Array.isArray(detailsRes.chapters),
+      detailsRes.id === detailsId &&
+        detailsRes.title &&
+        detailsRes.status &&
+        Array.isArray(detailsRes.chapters),
       `get_details ${detailsId.slice(0, 12)}... mode=${source.lastTransportMode ?? "?"} (${details.ms} ms)`,
       JSON.stringify(detailsRes).slice(0, 200),
     );
-    pass(`       chapters=${detailsRes.chapters.length} status=${detailsRes.status} title=${detailsRes.title}`);
+    pass(
+      `       chapters=${detailsRes.chapters.length} status=${detailsRes.status} title=${detailsRes.title}`,
+    );
   }
 
   // A details list can be chapter-less (a title with no listed chapters) or the
@@ -223,10 +234,14 @@ async function main() {
             );
             imageOk = true;
           } else {
-            console.log(`       - page [${candidate.index}] yielded ${img.result.type} ${img.result.size} bytes, trying next`);
+            console.log(
+              `       - page [${candidate.index}] yielded ${img.result.type} ${img.result.size} bytes, trying next`,
+            );
           }
         } catch (err) {
-          console.log(`       - page [${candidate.index}] fetch failed (${err.message}), trying next`);
+          console.log(
+            `       - page [${candidate.index}] fetch failed (${err.message}), trying next`,
+          );
         }
       }
       check(imageOk, "fetchImage at least one page", "all attempts empty (rotated CDN urls?)");

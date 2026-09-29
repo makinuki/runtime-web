@@ -28,18 +28,16 @@ async function getAjv(): Promise<Ajv> {
       const { default: addFormats } = await import("ajv-formats");
       const ajv = new Ajv({ allErrors: true, strict: false });
       addFormats(ajv);
-      ajv.addSchema(
-        [
-          metadataSchema,
-          filterSchema,
-          mangaSchema,
-          detailsSchema,
-          chapterSchema,
-          pagesSchema,
-          pageSchema,
-          settingsSchema,
-        ] as object[],
-      );
+      ajv.addSchema([
+        metadataSchema,
+        filterSchema,
+        mangaSchema,
+        detailsSchema,
+        chapterSchema,
+        pagesSchema,
+        pageSchema,
+        settingsSchema,
+      ] as object[]);
       return ajv;
     });
   }

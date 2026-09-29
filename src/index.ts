@@ -112,7 +112,11 @@ export class MakiNukiSource {
     return this.transport.lastMode;
   }
 
-  private async validated<T>(name: string, check: (payload: T) => Promise<string[]>, payload: T): Promise<T> {
+  private async validated<T>(
+    name: string,
+    check: (payload: T) => Promise<string[]>,
+    payload: T,
+  ): Promise<T> {
     if (this.validate) {
       const errors = await check(payload);
       for (const error of errors) console.warn(`[makinuki] ${error}`);
@@ -277,7 +281,14 @@ export class MakiNukiRuntime {
       }
       entry = entryFromMetadata(meta, wasmUrl);
     }
-    return new MakiNukiSource(entry, plugin, this.transport, this.storage, this.validate, hasSettings);
+    return new MakiNukiSource(
+      entry,
+      plugin,
+      this.transport,
+      this.storage,
+      this.validate,
+      hasSettings,
+    );
   }
 
   async close(): Promise<void> {

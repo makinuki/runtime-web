@@ -213,7 +213,14 @@ describe("CompanionClient.fetch", () => {
 
     const pending = client.fetch({ url: "https://x.example/", method: "GET" });
     const message = win.posted[1] as { id: string };
-    win.deliver(responseMessage({ id: message.id, status: 302, headers: { location: "https://x.example/b" }, body: undefined }));
+    win.deliver(
+      responseMessage({
+        id: message.id,
+        status: 302,
+        headers: { location: "https://x.example/b" },
+        body: undefined,
+      }),
+    );
 
     expect(await pending).toEqual({
       status: 302,

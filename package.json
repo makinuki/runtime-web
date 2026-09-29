@@ -3,15 +3,17 @@
   "version": "1.0.0",
   "description": "Official MakiNuki web runtime: runs WASM scraper plugins in the browser with a cascading transport manager (Direct -> Companion Extension -> Worker Proxy)",
   "license": "MIT",
-  "author": { "name": "Byururu-sama", "url": "https://github.com/Byururu-sama" },
+  "author": {
+    "name": "Byururu-sama",
+    "url": "https://github.com/Byururu-sama"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/makinuki/runtime-web.git"
   },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,13 +24,18 @@
     },
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist"
-  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "release": "node scripts/release.mjs",
     "build": "tsdown",
     "prepublishOnly": "pnpm build",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "node --experimental-wasm-modules --experimental-wasm-jspi scripts/e2e.mjs",
@@ -37,6 +44,16 @@
   "dependencies": {
     "@extism/extism": "2.0.0-rc13",
     "@makinuki/spec": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "oxfmt": "^0.70.0",
+    "oxlint": "^1.85.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "ajv": "^8.20.0",
@@ -49,14 +66,6 @@
     "ajv-formats": {
       "optional": true
     }
-  },
-  "devDependencies": {
-    "@types/node": "^24.0.0",
-    "ajv": "^8.20.0",
-    "ajv-formats": "^3.0.1",
-    "tsdown": "^0.22.14",
-    "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
   },
   "packageManager": "pnpm@11.22.0"
 }

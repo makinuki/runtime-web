@@ -35,9 +35,7 @@ export class Registry {
 
   static async sha256(bytes: Uint8Array): Promise<string> {
     const digest = await crypto.subtle.digest("SHA-256", bytes.slice());
-    return [...new Uint8Array(digest)]
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
+    return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
   }
 
   static async fetchVerifiedWasm(entry: RegistryEntry): Promise<Uint8Array> {
@@ -53,9 +51,7 @@ export class Registry {
     const bytes = new Uint8Array(await res.arrayBuffer());
     const digest = await Registry.sha256(bytes);
     if (digest !== entry.sha256) {
-      throw new RegistryError(
-        `wasm sha256 mismatch: expected ${entry.sha256}, got ${digest}`,
-      );
+      throw new RegistryError(`wasm sha256 mismatch: expected ${entry.sha256}, got ${digest}`);
     }
     return bytes;
   }

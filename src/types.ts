@@ -106,11 +106,7 @@ export interface PageItem {
   metadata?: ScrambleInfo;
 }
 
-export type FilterSchema =
-  | SelectFilter
-  | TriStateFilter
-  | CheckboxFilter
-  | TextFilter;
+export type FilterSchema = SelectFilter | TriStateFilter | CheckboxFilter | TextFilter;
 
 interface BaseFilter {
   id: string;

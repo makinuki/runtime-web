@@ -22,10 +22,7 @@ const isBump = ["patch", "minor", "major"].includes(arg);
 // leading zeros. Returns [major, minor, patch] or null.
 function parseVersion(value) {
   const parts = String(value ?? "").split(".");
-  if (
-    parts.length !== 3 ||
-    parts.some((p) => !/^(0|[1-9][0-9]*)$/.test(p))
-  ) {
+  if (parts.length !== 3 || parts.some((p) => !/^(0|[1-9][0-9]*)$/.test(p))) {
     return null;
   }
   return parts.map(Number);
@@ -68,7 +65,10 @@ if (!current) {
   fail(`unsupported version format '${raw.version}'`);
 }
 
-let major; let minor; let patch; let next;
+let major;
+let minor;
+let patch;
+let next;
 if (explicit) {
   if (compareVersions(explicit, current) <= 0) {
     fail(`new version ${arg} must be greater than current ${raw.version}`);
@@ -77,9 +77,12 @@ if (explicit) {
 } else {
   [major, minor, patch] = current;
   if (bump === "major") {
-    major += 1; minor = 0; patch = 0;
+    major += 1;
+    minor = 0;
+    patch = 0;
   } else if (bump === "minor") {
-    minor += 1; patch = 0;
+    minor += 1;
+    patch = 0;
   } else {
     patch += 1;
   }
@@ -99,10 +102,7 @@ fs.writeFileSync(
 // One targeted edit keeps the rest of package.json byte-identical,
 // including formatting and field order.
 raw.version = next;
-fs.writeFileSync(
-  "package.json",
-  `${JSON.stringify(raw, null, 2)}\n`,
-);
+fs.writeFileSync("package.json", `${JSON.stringify(raw, null, 2)}\n`);
 
 git("add package.json CHANGELOG.md");
 execSync(`git commit -m "chore(release): ${next}"`, { stdio: "inherit" });

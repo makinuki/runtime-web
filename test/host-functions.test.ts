@@ -76,9 +76,9 @@ describe("makeHostFunctions", () => {
   });
 
   it("makinuki_fetch rethrows transport errors as-is", async () => {
-    const fetcher = vi.fn().mockRejectedValue(
-      new TransportError("worker", "worker proxy rejected request: HTTP 403"),
-    );
+    const fetcher = vi
+      .fn()
+      .mockRejectedValue(new TransportError("worker", "worker proxy rejected request: HTTP 403"));
     const storage = new MemoryStorage();
     const functions = makeFunctions(fakeTransport(fetcher), storage, "mangadex");
     const ctx = makeContext();
@@ -163,8 +163,11 @@ describe("hostNamespaces", () => {
     expect(Object.keys(namespaces)).toEqual(["extism:host/makinuki", "makinuki"]);
     expect(extism.makinuki_fetch).toBe(functions.makinuki_fetch);
     expect(plain.makinuki_storage_get).toBe(functions.makinuki_storage_get);
-    expect(Object.keys(plain).sort()).toEqual(
-      ["makinuki_fetch", "makinuki_log", "makinuki_storage_get", "makinuki_storage_set"],
-    );
+    expect(Object.keys(plain).sort()).toEqual([
+      "makinuki_fetch",
+      "makinuki_log",
+      "makinuki_storage_get",
+      "makinuki_storage_set",
+    ]);
   });
 });

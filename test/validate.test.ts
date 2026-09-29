@@ -113,9 +113,9 @@ describe("validateFilters", () => {
   });
 
   it("rejects an unknown filter type", async () => {
-    const errors = await validateFilters(
-      [{ ...validFilters[0], type: "radio" }] as unknown as FilterSchema[],
-    );
+    const errors = await validateFilters([
+      { ...validFilters[0], type: "radio" },
+    ] as unknown as FilterSchema[]);
     expect(errors.length).toBeGreaterThan(0);
   });
 
@@ -128,9 +128,7 @@ describe("validateFilters", () => {
 
 describe("validateSearch", () => {
   it("accepts a valid PageResult", async () => {
-    expect(
-      await validateSearch({ page: 1, hasNextPage: true, items: [validItem] }),
-    ).toEqual([]);
+    expect(await validateSearch({ page: 1, hasNextPage: true, items: [validItem] })).toEqual([]);
   });
 
   it("rejects malformed shape", async () => {

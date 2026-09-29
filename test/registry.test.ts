@@ -46,7 +46,10 @@ describe("Registry", () => {
   });
 
   it("rejects an unknown source id", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{\"version\":1,\"updatedAt\":1,\"sources\":[]}")));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response('{"version":1,"updatedAt":1,"sources":[]}')),
+    );
     await expect(new Registry().find("nope")).rejects.toThrow(RegistryError);
   });
 
@@ -66,18 +69,21 @@ describe("Registry", () => {
       sha256: digest,
       minRuntimeVersion: "1.0.0",
     };
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => new Response(bytes)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => new Response(bytes)),
+    );
 
     const ok = await Registry.fetchVerifiedWasm(entry);
     expect(ok).toEqual(bytes);
 
-    await expect(
-      Registry.fetchVerifiedWasm({ ...entry, sha256: "f".repeat(64) }),
-    ).rejects.toThrow(/sha256 mismatch/);
+    await expect(Registry.fetchVerifiedWasm({ ...entry, sha256: "f".repeat(64) })).rejects.toThrow(
+      /sha256 mismatch/,
+    );
 
-    await expect(
-      Registry.fetchVerifiedWasm({ ...entry, abiVersion: 2 }),
-    ).rejects.toThrow(/abiVersion 2 does not match/);
+    await expect(Registry.fetchVerifiedWasm({ ...entry, abiVersion: 2 })).rejects.toThrow(
+      /abiVersion 2 does not match/,
+    );
   });
 });
 

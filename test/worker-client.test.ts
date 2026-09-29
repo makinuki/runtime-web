@@ -11,7 +11,9 @@ function jsonResponse(status: number, body: string): Response {
 
 describe("WorkerClient.relay", () => {
   it("appends /proxy when the proxy url has no path", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, '{"status":200,"headers":{},"body":""}'));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, '{"status":200,"headers":{},"body":""}'));
     vi.stubGlobal("fetch", fetchMock);
 
     const client = new WorkerClient("https://proxy.example");
@@ -23,7 +25,9 @@ describe("WorkerClient.relay", () => {
   });
 
   it("posts the request as a JSON payload", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, '{"status":404,"headers":{},"body":"nope"}'));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, '{"status":404,"headers":{},"body":"nope"}'));
     vi.stubGlobal("fetch", fetchMock);
 
     const client = new WorkerClient("https://proxy.example/proxy");
@@ -47,7 +51,9 @@ describe("WorkerClient.relay", () => {
   });
 
   it("defaults method to GET and body to null", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, '{"status":200,"headers":{},"body":""}'));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, '{"status":200,"headers":{},"body":""}'));
     vi.stubGlobal("fetch", fetchMock);
     const client = new WorkerClient("https://proxy.example/proxy", "secret-token");
 
@@ -61,7 +67,9 @@ describe("WorkerClient.relay", () => {
   });
 
   it("omits the client token when none is configured", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, '{"status":200,"headers":{},"body":""}'));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, '{"status":200,"headers":{},"body":""}'));
     vi.stubGlobal("fetch", fetchMock);
     const client = new WorkerClient("https://proxy.example/proxy");
 
@@ -72,7 +80,9 @@ describe("WorkerClient.relay", () => {
   });
 
   it("sends an origin header when configured", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, '{"status":200,"headers":{},"body":""}'));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, '{"status":200,"headers":{},"body":""}'));
     vi.stubGlobal("fetch", fetchMock);
     const client = new WorkerClient("https://proxy.example/proxy", "t", "https://app.example.com");
 
@@ -96,14 +106,18 @@ describe("WorkerClient.relay", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(403, "{}")));
     const client = new WorkerClient("https://proxy.example/proxy");
 
-    await expect(client.relay({ url: "https://evil.example/", method: "GET" })).rejects.toThrow(/HTTP 403/);
+    await expect(client.relay({ url: "https://evil.example/", method: "GET" })).rejects.toThrow(
+      /HTTP 403/,
+    );
   });
 
   it("throws when the worker response is not JSON", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("html", { status: 200 })));
     const client = new WorkerClient("https://proxy.example/proxy");
 
-    await expect(client.relay({ url: "https://x.example/", method: "GET" })).rejects.toThrow(SyntaxError);
+    await expect(client.relay({ url: "https://x.example/", method: "GET" })).rejects.toThrow(
+      SyntaxError,
+    );
   });
 });
 
@@ -116,7 +130,9 @@ describe("WorkerClient.imageUrl", () => {
     );
     const parsed = new URL(url);
     expect(parsed.origin + parsed.pathname).toBe("https://proxy.example/proxy");
-    expect(parsed.searchParams.get("url")).toBe("https://cmdxd98sb0x3yprd.mangadex.network/data/1.jpg");
+    expect(parsed.searchParams.get("url")).toBe(
+      "https://cmdxd98sb0x3yprd.mangadex.network/data/1.jpg",
+    );
     expect(parsed.searchParams.get("ref")).toBe("https://mangadex.org/chapter/1");
   });
 

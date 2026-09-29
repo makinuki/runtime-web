@@ -25,10 +25,7 @@ export function unwrapEnvelope<T>(raw: string): T {
   if (envelope.ok === true) return envelope.data;
   const code = (envelope as { error?: { code?: ErrorCode } }).error?.code;
   const message = (envelope as { error?: { message?: string } }).error?.message;
-  throw new PluginError(
-    code ?? "PARSING_ERROR",
-    message ?? "plugin returned an error envelope",
-  );
+  throw new PluginError(code ?? "PARSING_ERROR", message ?? "plugin returned an error envelope");
 }
 
 export class MakiNukiPlugin {
@@ -51,7 +48,8 @@ export class MakiNukiPlugin {
 
   async call(name: string, input: string): Promise<string> {
     const output = await this.instance.call(name, input ?? "");
-    if (output === null) throw new PluginError("PARSING_ERROR", `plugin export ${name} returned no output`);
+    if (output === null)
+      throw new PluginError("PARSING_ERROR", `plugin export ${name} returned no output`);
     return output.text();
   }
 

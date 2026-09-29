@@ -132,20 +132,14 @@ export class TransportManager {
     throw new TransportError(mode, `transport ${mode} is not configured`);
   }
 
-  private async fetchImageCompanion(
-    url: string,
-    headers?: Record<string, string>,
-  ): Promise<Blob> {
+  private async fetchImageCompanion(url: string, headers?: Record<string, string>): Promise<Blob> {
     const res = await this.companion.request("GET", url, headers, null, "arraybuffer");
     if (!res.bodyBase64) throw new Error("companion image response has no body");
     const type = res.headers["content-type"] ?? "application/octet-stream";
     return new Blob([base64ToBytes(res.bodyBase64).slice()], { type });
   }
 
-  private async fetchImageWorker(
-    url: string,
-    headers?: Record<string, string>,
-  ): Promise<Blob> {
+  private async fetchImageWorker(url: string, headers?: Record<string, string>): Promise<Blob> {
     if (!this.worker) throw new TransportError("worker", "worker proxy not configured");
     const referer = headers?.referer ?? headers?.Referer;
     const imageUrl = this.worker.imageUrl(url, referer);
@@ -153,23 +147,19 @@ export class TransportManager {
       imageUrl,
       this.worker.origin ? { headers: { origin: this.worker.origin } } : undefined,
     );
-    if (!res.ok) throw new TransportError("worker", `worker image fetch failed: HTTP ${res.status}`);
+    if (!res.ok)
+      throw new TransportError("worker", `worker image fetch failed: HTTP ${res.status}`);
     return res.blob();
   }
 
-  private async fetchImageDirect(
-    url: string,
-    headers?: Record<string, string>,
-  ): Promise<Blob> {
-    const res = await fetch(url, { headers: { ...(headers ?? {}), "user-agent": DEFAULT_UA } });
-    if (!res.ok) throw new TransportError("direct", `direct image fetch failed: HTTP ${res.status}`);
+  private async fetchImageDirect(url: string, headers?: Record<string, string>): Promise<Blob> {
+    const res = await fetch(url, { headers: { ...headers, "user-agent": DEFAULT_UA } });
+    if (!res.ok)
+      throw new TransportError("direct", `direct image fetch failed: HTTP ${res.status}`);
     return res.blob();
   }
 
-  async fetchImage(
-    url: string,
-    headers?: Record<string, string>,
-  ): Promise<Blob> {
+  async fetchImage(url: string, headers?: Record<string, string>): Promise<Blob> {
     if (this.pin) {
       const mode = this.pin;
       if (mode === "companion") return this.fetchImageCompanion(url, headers);
@@ -181,7 +171,7 @@ export class TransportManager {
       if (this.companionReady) {
         try {
           return await this.fetchImageCompanion(url, headers);
-        } catch (err) {
+        } catch {
           this.companionReady = false;
         }
       }

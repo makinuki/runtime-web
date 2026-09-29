@@ -12,8 +12,7 @@ afterEach(() => {
 
 describe("TransportManager.fetch cascade", () => {
   it("prefers direct on success and never cascades on HTTP statuses", async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(jsonResponse(403, "{}"));
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(403, "{}"));
     vi.stubGlobal("fetch", fetchMock);
 
     const transport = new TransportManager({ proxyUrl: "https://proxy.example" });
@@ -65,7 +64,9 @@ describe("TransportManager.fetch cascade", () => {
     const transport = new TransportManager({ proxyUrl: "https://proxy.example" });
 
     vi.spyOn(transport.companion, "detect").mockResolvedValue(true);
-    vi.spyOn(transport.companion, "request").mockRejectedValue(new Error("companion request timed out"));
+    vi.spyOn(transport.companion, "request").mockRejectedValue(
+      new Error("companion request timed out"),
+    );
     const relay = vi.spyOn(transport.worker!, "relay").mockResolvedValue({
       status: 200,
       headers: {},
@@ -86,16 +87,13 @@ describe("TransportManager.fetch cascade", () => {
     vi.spyOn(transport.companion, "detect").mockResolvedValue(false);
     vi.spyOn(transport.worker!, "relay").mockRejectedValue(new TypeError("proxy unreachable"));
 
-    await expect(
-      transport.fetch({ url: "https://x.example/a", method: "GET" }),
-    ).rejects.toThrow(/all transports failed/);
+    await expect(transport.fetch({ url: "https://x.example/a", method: "GET" })).rejects.toThrow(
+      /all transports failed/,
+    );
   });
 
   it("honors pin mode and does not fall back", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValueOnce(new TypeError("Failed to fetch")),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new TypeError("Failed to fetch")));
     const transport = new TransportManager({
       proxyUrl: "https://proxy.example",
       direct: true,
@@ -104,15 +102,15 @@ describe("TransportManager.fetch cascade", () => {
       pin: "direct",
     });
 
-    await expect(
-      transport.fetch({ url: "https://x.example/a", method: "GET" }),
-    ).rejects.toThrow(/Failed to fetch/);
+    await expect(transport.fetch({ url: "https://x.example/a", method: "GET" })).rejects.toThrow(
+      /Failed to fetch/,
+    );
   });
 
   it("pin=companion runs the availability handshake before the first request", async () => {
     const transport = new TransportManager({ pin: "companion" });
     const detect = vi.spyOn(transport.companion, "detect").mockResolvedValue(true);
-    const request = vi.spyOn(transport.companion, "request").mockResolvedValue({
+    vi.spyOn(transport.companion, "request").mockResolvedValue({
       status: 200,
       headers: {},
       body: "companion",
@@ -133,9 +131,9 @@ describe("TransportManager.fetch cascade", () => {
     const detect = vi.spyOn(transport.companion, "detect").mockResolvedValue(false);
 
     await expect(transport.detect()).resolves.toBeNull();
-    await expect(
-      transport.fetch({ url: "https://x.example/a", method: "GET" }),
-    ).rejects.toThrow(/companion extension not connected/);
+    await expect(transport.fetch({ url: "https://x.example/a", method: "GET" })).rejects.toThrow(
+      /companion extension not connected/,
+    );
     expect(detect).toHaveBeenCalledOnce();
   });
 
@@ -165,7 +163,7 @@ describe("TransportManager.fetch cascade", () => {
       url: "https://x.example/a",
       method: "POST",
       headers: { "content-type": "application/json", referer: "https://x.example" },
-      body: "{\"q\":1}",
+      body: '{"q":1}',
     };
     await transport.fetch(request);
 
@@ -192,14 +190,21 @@ describe("TransportManager.fetchImage", () => {
   });
 
   it("uses worker when companion unavailable", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(new Blob(["img"]), { headers: { "content-type": "image/jpeg" } }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(new Blob(["img"]), { headers: { "content-type": "image/jpeg" } }),
+      );
     vi.stubGlobal("fetch", fetchMock);
-    const transport = new TransportManager({ proxyUrl: "https://proxy.example", origin: "https://app.example.com" });
+    const transport = new TransportManager({
+      proxyUrl: "https://proxy.example",
+      origin: "https://app.example.com",
+    });
     vi.spyOn(transport.companion, "detect").mockResolvedValue(false);
 
-    const blob = await transport.fetchImage("https://cdn.example/i.jpg", { referer: "https://src.example" });
+    const blob = await transport.fetchImage("https://cdn.example/i.jpg", {
+      referer: "https://src.example",
+    });
 
     expect(blob.type).toBe("image/jpeg");
     expect(await blob.text()).toBe("img");
@@ -212,9 +217,11 @@ describe("TransportManager.fetchImage", () => {
   });
 
   it("falls back to direct fetch when no transport is configured", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(new Blob(["direct"]), { headers: { "content-type": "image/png" } }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(new Blob(["direct"]), { headers: { "content-type": "image/png" } }),
+      );
     vi.stubGlobal("fetch", fetchMock);
     const transport = new TransportManager({ direct: true, companion: false, worker: false });
 

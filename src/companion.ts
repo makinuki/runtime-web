@@ -64,9 +64,7 @@ export class CompanionClient {
       clearTimeout(entry.timer);
       this.pending.delete(response.id);
       if (response.status === 0) {
-        entry.reject(
-          new Error(response.error ?? "companion request failed (status 0)"),
-        );
+        entry.reject(new Error(response.error ?? "companion request failed (status 0)"));
         return;
       }
       entry.resolve({

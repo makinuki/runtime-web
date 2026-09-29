@@ -4,7 +4,12 @@ import { findSetting, isSensitiveSetting, serializeSettingValue } from "../src/s
 import { MemoryStorage } from "../src/storage";
 import type { SettingSchema } from "../src/types";
 
-const checkbox: SettingSchema = { id: "data_saver", title: "Data saver", type: "checkbox", default: false };
+const checkbox: SettingSchema = {
+  id: "data_saver",
+  title: "Data saver",
+  type: "checkbox",
+  default: false,
+};
 const select: SettingSchema = {
   id: "quality",
   title: "Quality",
