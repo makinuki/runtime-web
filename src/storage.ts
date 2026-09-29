@@ -1,6 +1,7 @@
 export interface StorageAdapter {
   get(key: string): Promise<string | null>;
   set(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<void>;
 }
 
 export const STORAGE_VALUE_CAP = 64 * 1024;
@@ -14,6 +15,10 @@ export class MemoryStorage implements StorageAdapter {
 
   async set(key: string, value: string): Promise<void> {
     this.store.set(key, value);
+  }
+
+  async delete(key: string): Promise<void> {
+    this.store.delete(key);
   }
 }
 
@@ -31,6 +36,10 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   async set(key: string, value: string): Promise<void> {
     this.backend.setItem(key, value);
+  }
+
+  async delete(key: string): Promise<void> {
+    this.backend.removeItem(key);
   }
 }
 

@@ -39,6 +39,25 @@ await source.close();
 await runtime.close();
 ```
 
+## Source settings
+
+Sources may declare user-configurable settings through the optional `get_settings` export. The runtime probes the export at load and exposes it on the loaded source:
+
+```js
+const source = await runtime.loadSource("mangadex");
+
+source.hasSettings;                             // true when the plugin declares settings
+const settings = await source.getSettings();    // SettingSchema[]
+
+await source.setSetting("data_saver", true);                   // checkbox: boolean
+await source.setSetting("base_url", "https://mirror.example"); // text: raw string
+await source.isSettingSet("base_url");                         // true
+await source.getSettingValue("base_url");                      // stored raw value (non-sensitive only)
+await source.setSetting("base_url", null);                     // reset: deletes the key
+```
+
+Values are written into the plugin's per-source storage namespace, so the plugin reads them back through `makinuki_storage_get` at call time. `select` values must be one of the declared options, every write is checked against the declared setting and the 64 KB storage cap, and a missing key means the declared default applies. Sensitive (`sensitive: true`) values are never returned; use `isSettingSet` for those. Custom `StorageAdapter` implementations must provide `delete()` to support resets.
+
 ## Architecture
 
 | Module | Responsibility |
@@ -46,6 +65,7 @@ await runtime.close();
 | `src/registry.ts` | Fetch and parse the registry manifest |
 | `src/plugin.ts` | Load a `.wasm` plugin, run exports, wrap results in `PluginResult<T>` |
 | `src/host-functions.ts` | `makinuki_fetch`, `makinuki_storage_get`, `makinuki_storage_set`, `makinuki_log` adapters |
+| `src/settings.ts` | Setting declarations lookup and value serialization |
 | `src/transport.ts` | Pinned transport manager (direct / companion / worker), mode detection |
 | `src/worker-client.ts` | HTTP relay client for the worker proxy (envelope parsing, URL normalization) |
 | `src/companion.ts` | Messaging client for the companion browser extension |

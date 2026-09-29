@@ -1,10 +1,18 @@
 import { ABI_VERSION, Registry, type RegistryEntry, type RegistryIndex } from "./registry";
 import { TransportManager, type TransportMode, type TransportOptions } from "./transport";
-import { makeHostFunctions } from "./host-functions";
+import { makeHostFunctions, namespacedStorageKey } from "./host-functions";
 import { MakiNukiPlugin } from "./plugin";
+import { findSetting, isSensitiveSetting, serializeSettingValue } from "./settings";
 import { LocalStorageAdapter, MemoryStorage, type StorageAdapter } from "./storage";
 import { unscramblePageBlob } from "./unscramble";
-import { validateDetails, validateFilters, validateMetadata, validatePages, validateSearch } from "./validate";
+import {
+  validateDetails,
+  validateFilters,
+  validateMetadata,
+  validatePages,
+  validateSearch,
+  validateSettings,
+} from "./validate";
 import type {
   FilterSchema,
   MangaDetails,
@@ -12,6 +20,7 @@ import type {
   PageItem,
   PageResult,
   SearchQuery,
+  SettingSchema,
   SourceMetadata,
 } from "./types";
 
@@ -55,21 +64,28 @@ function entryFromMetadata(meta: SourceMetadata, wasmUrl: string): RegistryEntry
     sha256: "",
     minRuntimeVersion: "1.0.0",
     allowedHosts: meta.allowedHosts,
+    rateLimit: meta.rateLimit,
+    retry: meta.retry,
   };
 }
 
 export class MakiNukiSource {
   readonly id: string;
   readonly metadata: SourceMetadata;
+  // Probed at load from the plugin's optional get_settings export.
+  readonly hasSettings: boolean;
   private readonly plugin: MakiNukiPlugin;
   private readonly transport: TransportManager;
+  private readonly storage: StorageAdapter;
   private readonly validate: boolean;
 
   constructor(
     entry: RegistryEntry,
     plugin: MakiNukiPlugin,
     transport: TransportManager,
+    storage: StorageAdapter,
     validate: boolean,
+    hasSettings: boolean,
   ) {
     this.id = entry.id;
     this.metadata = {
@@ -82,10 +98,14 @@ export class MakiNukiSource {
       iconUrl: entry.iconUrl,
       nsfw: entry.nsfw,
       allowedHosts: entry.allowedHosts,
+      rateLimit: entry.rateLimit,
+      retry: entry.retry,
     };
     this.plugin = plugin;
     this.transport = transport;
+    this.storage = storage;
     this.validate = validate;
+    this.hasSettings = hasSettings;
   }
 
   get lastTransportMode(): TransportMode | null {
@@ -108,6 +128,14 @@ export class MakiNukiSource {
   async getFilters(): Promise<FilterSchema[]> {
     const payload = await this.plugin.callStatic<FilterSchema[]>("get_filters");
     return this.validated("get_filters", validateFilters, payload);
+  }
+
+  // Declared settings in the order the source lists them; an empty array when
+  // the plugin carries no get_settings export.
+  async getSettings(): Promise<SettingSchema[]> {
+    if (!this.hasSettings) return [];
+    const payload = await this.plugin.callStatic<SettingSchema[]>("get_settings");
+    return this.validated("get_settings", validateSettings, payload);
   }
 
   async search(query?: Partial<SearchQuery>): Promise<PageResult<MangaItem>> {
@@ -149,6 +177,38 @@ export class MakiNukiSource {
 
   async fetchScrambledPage(page: PageItem): Promise<Blob> {
     return unscramblePageBlob(this.plugin, this.transport, page);
+  }
+
+  // Settings persistence. Values land in the plugin's per-source storage
+  // namespace, so the plugin reads them back through
+  // makinuki_storage_get at call time; null resets a setting by deleting the
+  // key, which makes the declared default apply again.
+  async setSetting(id: string, value: string | boolean | null): Promise<void> {
+    const setting = await this.declaredSetting(id);
+    const key = namespacedStorageKey(this.id, id);
+    if (value === null) {
+      await this.storage.delete(key);
+      return;
+    }
+    await this.storage.set(key, serializeSettingValue(setting, value));
+  }
+
+  async isSettingSet(id: string): Promise<boolean> {
+    await this.declaredSetting(id);
+    return (await this.storage.get(namespacedStorageKey(this.id, id))) !== null;
+  }
+
+  // Sensitive values are never returned; isSettingSet() reports those.
+  async getSettingValue(id: string): Promise<string | null> {
+    const setting = await this.declaredSetting(id);
+    if (isSensitiveSetting(setting)) {
+      throw new Error(`setting ${id} is sensitive; use isSettingSet()`);
+    }
+    return this.storage.get(namespacedStorageKey(this.id, id));
+  }
+
+  private async declaredSetting(id: string): Promise<SettingSchema> {
+    return findSetting(await this.getSettings(), id);
   }
 
   async close(): Promise<void> {
@@ -206,6 +266,7 @@ export class MakiNukiRuntime {
       sourceId: entry?.id ?? "unknown",
     });
     const plugin = await MakiNukiPlugin.load(wasmBytes, functions);
+    const hasSettings = await plugin.hasExport("get_settings");
     if (!entry) {
       const meta = await plugin.callStatic<SourceMetadata>("get_metadata");
       if (meta.abiVersion !== ABI_VERSION) {
@@ -216,7 +277,7 @@ export class MakiNukiRuntime {
       }
       entry = entryFromMetadata(meta, wasmUrl);
     }
-    return new MakiNukiSource(entry, plugin, this.transport, this.validate);
+    return new MakiNukiSource(entry, plugin, this.transport, this.storage, this.validate, hasSettings);
   }
 
   async close(): Promise<void> {
@@ -226,3 +287,32 @@ export class MakiNukiRuntime {
     this.sources.clear();
   }
 }
+
+export type {
+  ChapterItem,
+  CheckboxFilter,
+  CheckboxSetting,
+  CoverVariant,
+  ErrorCode,
+  FilterSchema,
+  HttpRequest,
+  HttpResponse,
+  MangaDetails,
+  MangaItem,
+  PageItem,
+  PageResult,
+  PluginResult,
+  RateLimitHint,
+  RegistryEntry,
+  RegistryIndex,
+  RetryHint,
+  ScrambleInfo,
+  SearchQuery,
+  SelectFilter,
+  SelectSetting,
+  SettingSchema,
+  SourceMetadata,
+  TextFilter,
+  TextSetting,
+  TriStateFilter,
+} from "./types";

@@ -5,6 +5,12 @@ import type { HttpRequest } from "./types";
 
 export type HostFunction = (callContext: CallContext, input: bigint) => Promise<bigint>;
 
+// The per-source storage namespace: every key the host functions and the
+// source-level settings persistence touch is prefixed with the source id.
+export function namespacedStorageKey(sourceId: string, key: string): string {
+  return `${sourceId}:${key}`;
+}
+
 export interface HostFunctionContext {
   transport: TransportManager;
   storage: StorageAdapter;
@@ -12,7 +18,7 @@ export interface HostFunctionContext {
 }
 
 export function makeHostFunctions(context: HostFunctionContext): Record<string, HostFunction> {
-  const storageKey = (key: string): string => `${context.sourceId}:${key}`;
+  const storageKey = (key: string): string => namespacedStorageKey(context.sourceId, key);
 
   const makinukiFetch: HostFunction = async (callContext, input) => {
     const raw = callContext.read(input);
